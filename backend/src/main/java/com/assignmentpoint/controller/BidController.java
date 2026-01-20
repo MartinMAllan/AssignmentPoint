@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/bids")
+@RequestMapping("/bids")
 @CrossOrigin(origins = "*")
 public class BidController {
     

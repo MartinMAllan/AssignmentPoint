@@ -1,2 +1,13 @@
-package com.assignmentpoint.config;public class StripeConfig {
+package com.assignmentpoint.config;
+
+import com.stripe.Stripe;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class StripeConfig {
+
+    public StripeConfig(@Value("${stripe.api.key}") String stripeApiKey) {
+        Stripe.apiKey = stripeApiKey;
+    }
 }

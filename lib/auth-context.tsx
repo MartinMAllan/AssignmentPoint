@@ -51,7 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.login({ email, password, referralCode })
       console.log("[v0] AuthContext - Login response received:", response)
 
-      setUser(response.user)
+      setUser({
+      ...response.user,
+      role: response.user.role.toLowerCase() as UserRole
+    })
       console.log("[v0] AuthContext - User state updated to:", response.user)
     } catch (error) {
       console.error("[v0] AuthContext - Login failed:", error)
@@ -73,7 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await authService.register(data)
       console.log("[v0] AuthContext - Registration response received:", response)
 
-      setUser(response.user)
+      setUser({
+      ...response.user,
+      role: response.user.role.toLowerCase() as UserRole
+    })
       console.log("[v0] AuthContext - User state updated to:", response.user)
     } catch (error) {
       console.error("[v0] AuthContext - Registration failed:", error)

@@ -3,7 +3,7 @@ import type { Order } from "../types"
 
 export interface CreateOrderRequest {
   title: string
-  description: string
+  description?: string
   type: string
   educationLevel: string
   subject: string
@@ -34,10 +34,29 @@ export interface OrderFilters {
   size?: number
 }
 
+function normalizeDeadline(deadline: string | Date): string {
+  if (deadline instanceof Date) {
+    const pad = (n: number) => n.toString().padStart(2, "0")
+    return `${deadline.getFullYear()}-${pad(deadline.getMonth() + 1)}-${pad(deadline.getDate())}` +
+           `T${pad(deadline.getHours())}:${pad(deadline.getMinutes())}`
+  }
+
+  return deadline.slice(0, 16)
+}
+
+function cleanPayload<T extends Record<string, any>>(payload: T): T {
+  return Object.fromEntries(
+    Object.entries(payload).filter(
+      ([_, value]) => value !== undefined && !(typeof value === "number" && isNaN(value))
+    )
+  ) as T
+}
+
 export const orderService = {
+
   async getAllOrders(filters?: OrderFilters): Promise<Order[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Order[]>>("api/orders", {
+      const response = await apiClient.get<ApiResponse<Order[]>>("/orders", {
         params: filters,
       })
       return response.data.data
@@ -48,7 +67,7 @@ export const orderService = {
 
   async getOrderById(orderId: number): Promise<Order> {
     try {
-      const response = await apiClient.get<ApiResponse<Order>>(`api/orders/${orderId}`)
+      const response = await apiClient.get<ApiResponse<Order>>(`/orders/${orderId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -57,29 +76,27 @@ export const orderService = {
 
   async createOrder(orderData: CreateOrderRequest): Promise<Order> {
     try {
-      const response = await apiClient.post<ApiResponse<Order>>("api/orders", orderData)
-      return response.data.data
-    } catch (error) {
-      throw new Error(handleApiError(error))
-    }
-  },
+      console.log("[OrderService] Creating order:", orderData)
 
-  async createOrderWithFiles(formData: FormData): Promise<Order> {
-    try {
-      const response = await apiClient.post<ApiResponse<Order>>("api/orders/with-files", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const payload = cleanPayload({
+        ...orderData,
+        deadline: normalizeDeadline(orderData.deadline),
       })
+
+      const response = await apiClient.post<ApiResponse<Order>>("/orders", payload)
       return response.data.data
     } catch (error) {
+      console.error("[OrderService] Create order failed:", error)
       throw new Error(handleApiError(error))
     }
   },
 
   async updateOrder(orderId: number, updates: UpdateOrderRequest): Promise<Order> {
     try {
-      const response = await apiClient.put<ApiResponse<Order>>(`api/orders/${orderId}`, updates)
+      const response = await apiClient.put<ApiResponse<Order>>(
+        `/orders/${orderId}`,
+        updates
+      )
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -96,7 +113,9 @@ export const orderService = {
 
   async getOrdersByCustomer(customerId: number): Promise<Order[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Order[]>>(`api/orders/customer/${customerId}`)
+      const response = await apiClient.get<ApiResponse<Order[]>>(
+        `/orders/customer/${customerId}`
+      )
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -105,7 +124,9 @@ export const orderService = {
 
   async getOrdersByWriter(writerId: number): Promise<Order[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Order[]>>(`api/orders/writer/${writerId}`)
+      const response = await apiClient.get<ApiResponse<Order[]>>(
+        `/orders/writer/${writerId}`
+      )
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -114,20 +135,64 @@ export const orderService = {
 
   async getAvailableOrders(filters?: OrderFilters): Promise<Order[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Order[]>>("api/orders/available", {
-        params: filters,
-      })
+      const response = await apiClient.get<ApiResponse<Order[]>>(
+        "/orders/available",
+        { params: filters }
+      )
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
     }
   },
 
-  async updateOrderStatus(orderId: number, status: string): Promise<Order> {
+  /**
+   * Creates order first, then uploads files (non-blocking)
+   */
+  async createOrderWithFiles(formData: FormData): Promise<Order> {
     try {
-      const response = await apiClient.patch<ApiResponse<Order>>(`api/orders/${orderId}/status`, { status })
-      return response.data.data
+      console.log("[OrderService] Creating order with files")
+
+      const payload = cleanPayload({
+        title: formData.get("title"),
+        description: formData.get("description"),
+        type: formData.get("type"),
+        educationLevel: formData.get("educationLevel"),
+        subject: formData.get("subject"),
+        pages: Number(formData.get("pages")),
+        words: Number(formData.get("words")),
+        sourcesRequired: Number(formData.get("sourcesRequired")),
+        citationStyle: formData.get("citationStyle"),
+        language: formData.get("language"),
+        spacing: formData.get("spacing"),
+        totalAmount: Number(formData.get("totalAmount")),
+        deadline: normalizeDeadline(String(formData.get("deadline"))),
+        deliveryTime: Number(formData.get("deliveryTime")),
+      })
+
+      const response = await apiClient.post<ApiResponse<Order>>("/orders", payload)
+      const order = response.data.data
+
+      const files = formData.getAll("files") as File[]
+
+      for (const file of files) {
+        const fileForm = new FormData()
+        fileForm.append("orderId", String(order.id))
+        fileForm.append("file", file)
+        fileForm.append("category", "reference_materials")
+
+        try {
+          await apiClient.post("/files/upload", fileForm, {
+            headers: { "Content-Type": "multipart/form-data" },
+          })
+          console.log("[OrderService] Uploaded:", file.name)
+        } catch (err) {
+          console.warn("[OrderService] File upload failed:", file.name, err)
+        }
+      }
+
+      return order
     } catch (error) {
+      console.error("[OrderService] Create order with files failed:", error)
       throw new Error(handleApiError(error))
     }
   },

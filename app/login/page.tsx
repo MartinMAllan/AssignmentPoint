@@ -31,7 +31,7 @@ export default function LoginPage() {
 
     try {
       console.log("[v0] Login page - Starting login for:", email)
-      await login(email, password, referralCode || undefined)
+      await login(email, password)
       console.log("[v0] Login page - Login successful, redirecting to dashboard")
 
       router.replace("/dashboard")
@@ -117,7 +117,7 @@ export default function LoginPage() {
               />
             </div>
 
-            {role === "customer" && (
+            {/* {role === "customer" && (
               <div className="space-y-2">
                 <Label htmlFor="referralCode" className="text-slate-200">
                   Referral Code <span className="text-red-400">*</span>
@@ -132,7 +132,7 @@ export default function LoginPage() {
                 />
                 <p className="text-xs text-slate-400">Required for customer registration</p>
               </div>
-            )}
+            )} */}
 
             <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
               {isLoading ? (

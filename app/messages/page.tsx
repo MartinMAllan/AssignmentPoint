@@ -1,13 +1,11 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { MessageSquare } from "lucide-react"
-import { useEffect, useState } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { messageService, type Message } from "@/lib/api/message.service"
+import { MessageSquare, Loader2 } from "lucide-react"
 
 interface Conversation {
   id: string
@@ -18,47 +16,26 @@ interface Conversation {
 }
 
 export default function MessagesPage() {
-  const { user } = useAuth()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadMessages = async () => {
+    const fetchConversations = async () => {
       try {
         setLoading(true)
-        const userId = user?.id ? Number(user.id) : 0
-        const messages = await messageService.getUserMessages(userId)
-
-        // Group messages by order to create conversations
-        const grouped: Record<string, Message[]> = {}
-        messages.forEach((msg) => {
-          if (!grouped[msg.orderId]) {
-            grouped[msg.orderId] = []
-          }
-          grouped[msg.orderId].push(msg)
-        })
-
-        const convs = Object.entries(grouped).map(([orderId, msgs]) => ({
-          id: orderId,
-          orderNumber: `10${orderId}`,
-          participant:
-            msgs[0]?.senderId === Number(user?.id) ? `User ${msgs[0]?.receiverId}` : `User ${msgs[0]?.senderId}`,
-          unread: msgs.filter((m) => !m.isRead && m.receiverId === Number(user?.id)).length,
-          lastMessage: msgs[msgs.length - 1]?.messageText || "",
-        }))
-
-        setConversations(convs)
-      } catch (err) {
-        console.error("[v0] Error loading messages:", err)
+        const response = await fetch("/api/messages/conversations")
+        const result = await response.json()
+        setConversations(result.data || [])
+      } catch (error) {
+        console.error("[v0] Failed to fetch conversations:", error)
+        setConversations([])
       } finally {
         setLoading(false)
       }
     }
 
-    if (user?.id) {
-      loadMessages()
-    }
-  }, [user?.id])
+    fetchConversations()
+  }, [])
 
   return (
     <DashboardLayout>
@@ -68,13 +45,17 @@ export default function MessagesPage() {
           <p className="text-slate-400 mt-1">View all your conversations</p>
         </div>
 
-        <div className="grid gap-4">
-          {loading ? (
-            <p className="text-slate-400">Loading messages...</p>
-          ) : conversations.length === 0 ? (
-            <p className="text-slate-400">No messages yet</p>
-          ) : (
-            conversations.map((conv) => (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-400">No conversations yet</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {conversations.map((conv) => (
               <Card
                 key={conv.id}
                 className="bg-slate-900 border-slate-800 p-4 hover:border-slate-700 cursor-pointer transition-colors"
@@ -98,9 +79,9 @@ export default function MessagesPage() {
                   <MessageSquare className="h-5 w-5 text-slate-400" />
                 </div>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   )

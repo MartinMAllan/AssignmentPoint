@@ -23,7 +23,7 @@ export const bidService = {
 
   async getBidsByOrder(orderId: number): Promise<BidResponse[]> {
     try {
-      const response = await apiClient.get<ApiResponse<BidResponse[]>>(`api/bids/order/${orderId}`)
+      const response = await apiClient.get<ApiResponse<BidResponse[]>>(`bids/order/${orderId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -32,7 +32,7 @@ export const bidService = {
 
   async getBidsByWriter(writerId: number): Promise<Bid[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Bid[]>>(`api/bids/writer/${writerId}`)
+      const response = await apiClient.get<ApiResponse<Bid[]>>(`bids/writer/${writerId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -41,7 +41,7 @@ export const bidService = {
 
   async getPendingBids(): Promise<Bid[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Bid[]>>("api/bids/pending")
+      const response = await apiClient.get<ApiResponse<Bid[]>>("bids/pending")
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -50,7 +50,7 @@ export const bidService = {
 
   async getAllBids(): Promise<Bid[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Bid[]>>("api/bids")
+      const response = await apiClient.get<ApiResponse<Bid[]>>("bids")
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -59,7 +59,7 @@ export const bidService = {
 
   async acceptBid(bidId: number): Promise<Bid> {
     try {
-      const response = await apiClient.post<ApiResponse<Bid>>(`api/bids/${bidId}/accept`)
+      const response = await apiClient.post<ApiResponse<Bid>>(`bids/${bidId}/accept`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))

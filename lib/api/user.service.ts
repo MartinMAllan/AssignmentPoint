@@ -41,7 +41,7 @@ export const userService = {
     }
 
     try {
-      const response = await apiClient.get<ApiResponse<User[]>>("api/users", {
+      const response = await apiClient.get<ApiResponse<User[]>>("users", {
         params: { role },
       })
       return response.data.data
@@ -57,7 +57,7 @@ export const userService = {
     }
 
     try {
-      const response = await apiClient.get<ApiResponse<User>>(`api/users/${userId}`)
+      const response = await apiClient.get<ApiResponse<User>>(`users/${userId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -71,7 +71,7 @@ export const userService = {
     }
 
     try {
-      const response = await apiClient.put<ApiResponse<User>>(`api/users/${userId}`, updates)
+      const response = await apiClient.put<ApiResponse<User>>(`users/${userId}`, updates)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -85,7 +85,7 @@ export const userService = {
     }
 
     try {
-      const response = await apiClient.get<ApiResponse<UserStats>>(`api/users/${userId}/stats`)
+      const response = await apiClient.get<ApiResponse<UserStats>>(`users/${userId}/stats`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -99,7 +99,7 @@ export const userService = {
     }
 
     try {
-      await apiClient.patch(`api/users/${userId}/deactivate`)
+      await apiClient.patch(`users/${userId}/deactivate`)
     } catch (error) {
       throw new Error(handleApiError(error))
     }
@@ -112,7 +112,7 @@ export const userService = {
     }
 
     try {
-      await apiClient.patch(`api/users/${userId}/activate`)
+      await apiClient.patch(`users/${userId}/activate`)
     } catch (error) {
       throw new Error(handleApiError(error))
     }

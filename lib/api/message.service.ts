@@ -19,7 +19,7 @@ export interface SendMessageRequest {
 export const messageService = {
   async getOrderMessages(orderId: number): Promise<Message[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Message[]>>(`api/messages/order/${orderId}`)
+      const response = await apiClient.get<ApiResponse<Message[]>>(`messages/order/${orderId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -28,7 +28,7 @@ export const messageService = {
 
   async sendMessage(messageData: SendMessageRequest): Promise<Message> {
     try {
-      const response = await apiClient.post<ApiResponse<Message>>("api/messages", messageData)
+      const response = await apiClient.post<ApiResponse<Message>>("messages", messageData)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -45,7 +45,7 @@ export const messageService = {
 
   async getUserMessages(userId: number): Promise<Message[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Message[]>>(`api/messages/user/${userId}`)
+      const response = await apiClient.get<ApiResponse<Message[]>>(`messages/user/${userId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))

@@ -28,7 +28,7 @@ export const authService = {
       console.log("[v0] Login attempt with email:", credentials.email)
       console.log("[v0] API URL:", process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api")
 
-      const response = await apiClient.post<ApiResponse<LoginResponse>>("api/auth/login", credentials)
+      const response = await apiClient.post<ApiResponse<LoginResponse>>("auth/login", credentials)
 
       console.log("[v0] Login response status:", response.status)
       console.log("[v0] Login response data:", response.data)
@@ -51,7 +51,7 @@ export const authService = {
 
   async register(userData: RegisterRequest): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<ApiResponse<LoginResponse>>("api/auth/register", userData)
+      const response = await apiClient.post<ApiResponse<LoginResponse>>("auth/register", userData)
 
       // Store token and user data
       if (response.data.success) {

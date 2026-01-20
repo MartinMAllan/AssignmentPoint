@@ -1,46 +1,36 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DollarSign, TrendingUp, Users, Percent } from "lucide-react"
+import { revenueService, type RevenueStats, type RevenueTransaction } from "@/lib/api/revenue.service"
 
 export default function RevenuePage() {
-  const revenueStats = [
-    { label: "Total Revenue", value: "$328,500", icon: DollarSign, color: "text-green-500" },
-    { label: "Platform Profit", value: "$131,400", icon: TrendingUp, color: "text-blue-500" },
-    { label: "Writer Earnings", value: "$131,400", icon: Users, color: "text-purple-500" },
-    { label: "Agent Commissions", value: "$32,850", icon: Percent, color: "text-orange-500" },
-  ]
+  const [stats, setStats] = useState<RevenueStats | null>(null)
+  const [transactions, setTransactions] = useState<RevenueTransaction[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const recentTransactions = [
-    {
-      id: "1",
-      order: "#10151816",
-      amount: 386.8,
-      writerShare: 154.72,
-      agentShare: 38.68,
-      profit: 154.72,
-      date: "2025-12-18",
-    },
-    {
-      id: "2",
-      order: "#10151815",
-      amount: 450.0,
-      writerShare: 180.0,
-      agentShare: 45.0,
-      profit: 180.0,
-      date: "2025-12-18",
-    },
-    {
-      id: "3",
-      order: "#10151814",
-      amount: 320.5,
-      writerShare: 128.2,
-      agentShare: 32.05,
-      profit: 128.2,
-      date: "2025-12-17",
-    },
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      const [statsData, transactionsData] = await Promise.all([
+        revenueService.getRevenueStats(),
+        revenueService.getRecentTransactions(),
+      ])
+      setStats(statsData)
+      setTransactions(transactionsData)
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  const revenueStats = [
+    { label: "Total Revenue", value: stats?.totalRevenue ?? 0, icon: DollarSign, color: "text-green-500" },
+    { label: "Platform Profit", value: stats?.platformProfit ?? 0, icon: TrendingUp, color: "text-blue-500" },
+    { label: "Writer Earnings", value: stats?.writerEarnings ?? 0, icon: Users, color: "text-purple-500" },
+    { label: "Agent Commissions", value: stats?.agentCommissions ?? 0, icon: Percent, color: "text-orange-500" },
   ]
 
   return (
@@ -59,7 +49,9 @@ export default function RevenuePage() {
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-100">{stat.value}</div>
+                <div className="text-2xl font-bold text-slate-100">
+                  ${typeof stat.value === "number" ? stat.value.toLocaleString() : 0}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -70,27 +62,36 @@ export default function RevenuePage() {
             <CardTitle className="text-slate-100">Recent Revenue Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentTransactions.map((transaction) => (
-                <div key={transaction.id} className="flex items-center justify-between border-b border-slate-800 pb-4">
-                  <div>
-                    <p className="font-medium text-slate-100">{transaction.order}</p>
-                    <p className="text-sm text-slate-400">{transaction.date}</p>
-                  </div>
-                  <div className="text-right space-y-1">
-                    <p className="text-lg font-bold text-slate-100">${transaction.amount}</p>
-                    <div className="flex gap-2 text-xs">
-                      <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
-                        Writer: ${transaction.writerShare}
-                      </Badge>
-                      <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
-                        Agent: ${transaction.agentShare}
-                      </Badge>
+            {loading ? (
+              <p className="text-slate-400">Loading transactions...</p>
+            ) : transactions.length === 0 ? (
+              <p className="text-slate-400">No transactions yet</p>
+            ) : (
+              <div className="space-y-4">
+                {transactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between border-b border-slate-800 pb-4"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-100">{transaction.orderId}</p>
+                      <p className="text-sm text-slate-400">{transaction.date}</p>
+                    </div>
+                    <div className="text-right space-y-1">
+                      <p className="text-lg font-bold text-slate-100">${transaction.amount.toFixed(2)}</p>
+                      <div className="flex gap-2 text-xs">
+                        <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/20">
+                          Writer: ${transaction.writerShare.toFixed(2)}
+                        </Badge>
+                        <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20">
+                          Agent: ${transaction.agentShare.toFixed(2)}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

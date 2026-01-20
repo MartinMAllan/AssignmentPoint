@@ -15,7 +15,7 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor to add JWT token
 apiClient.interceptors.request.use(
   (config) => {
-    const isAuthEndpoint = config.url?.includes("/api/auth/login") || config.url?.includes("/api/auth/register")
+    const isAuthEndpoint = config.url?.includes("/auth/login") || config.url?.includes("/auth/register")
 
     const token = localStorage.getItem("jwt_token")
     if (token && !isAuthEndpoint) {

@@ -93,6 +93,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               { icon: Plus, label: "Post Order", href: "/customer/post-order" },
               { icon: FileText, label: "My Orders", href: "/orders" },
               { icon: MessageSquare, label: "Messages", href: "/messages" },
+              { icon: DollarSign, label: "Wallet & Deposits", href: "/customer/deposit" },
               { icon: DollarSign, label: "Billing", href: "/transactions" },
             ]
           : [

@@ -22,7 +22,7 @@ export interface EarningsSummary {
 export const transactionService = {
   async getUserTransactions(userId: number): Promise<Transaction[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Transaction[]>>(`api/transactions/user/${userId}`)
+      const response = await apiClient.get<ApiResponse<Transaction[]>>(`transactions/user/${userId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -31,7 +31,7 @@ export const transactionService = {
 
   async getEarningsSummary(userId: number): Promise<EarningsSummary> {
     try {
-      const response = await apiClient.get<ApiResponse<EarningsSummary>>(`api/transactions/user/${userId}/summary`)
+      const response = await apiClient.get<ApiResponse<EarningsSummary>>(`transactions/user/${userId}/summary`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))
@@ -40,7 +40,7 @@ export const transactionService = {
 
   async getOrderTransactions(orderId: number): Promise<Transaction[]> {
     try {
-      const response = await apiClient.get<ApiResponse<Transaction[]>>(`api/transactions/order/${orderId}`)
+      const response = await apiClient.get<ApiResponse<Transaction[]>>(`transactions/order/${orderId}`)
       return response.data.data
     } catch (error) {
       throw new Error(handleApiError(error))

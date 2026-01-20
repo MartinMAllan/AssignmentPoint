@@ -7,10 +7,19 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { userService } from "@/lib/api/user.service"
 import { Search, MoreVertical, Eye, UserX, UserCheck, Mail } from "lucide-react"
 import { useState, useEffect } from "react"
-import type { User } from "@/lib/types"
+import { userService } from "@/lib/api/user.service"
+
+interface User {
+  id: number | string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+  isActive: boolean
+  createdAt: string
+}
 
 export default function AdminUsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -23,11 +32,13 @@ export default function AdminUsersPage() {
     const fetchUsers = async () => {
       try {
         setLoading(true)
+        const fetchedUsers = await userService.getAllUsers(roleFilter || undefined)
+        setUsers(fetchedUsers)
         setError(null)
-        const data = await userService.getAllUsers(roleFilter || undefined)
-        setUsers(data)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch users")
+        console.error("[v0] Failed to fetch users:", err)
+        setError("Failed to load users. Please try again.")
+        setUsers([])
       } finally {
         setLoading(false)
       }
@@ -45,7 +56,7 @@ export default function AdminUsersPage() {
       editor: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       writer_manager: "bg-cyan-500/10 text-cyan-500 border-cyan-500/20",
     }
-    return colors[role] || "bg-slate-500/10 text-slate-500"
+    return colors[role.toLowerCase()] || "bg-slate-500/10 text-slate-500"
   }
 
   const filteredUsers = users.filter((user) => {
@@ -113,9 +124,13 @@ export default function AdminUsersPage() {
               </div>
             </div>
 
-            {loading && <div className="text-center text-slate-400 py-8">Loading users...</div>}
-            {error && <div className="text-center text-red-400 py-8">Error: {error}</div>}
-            {!loading && !error && (
+            {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-md text-red-400">{error}</div>}
+
+            {loading ? (
+              <div className="p-8 text-center text-slate-400">Loading users...</div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="p-8 text-center text-slate-400">No users found matching your search.</div>
+            ) : (
               <div className="rounded-md border border-slate-800">
                 <Table>
                   <TableHeader>

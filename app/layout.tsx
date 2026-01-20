@@ -5,29 +5,25 @@ import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
 
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const geist = Geist({ subsets: ["latin"] })
+const geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Assignment Point",
-  description: "Academic writing service management platform",
-  generator: "v0.app",
+  title: "Assignment Point - Academic Writing & Assignment Management",
+  description: "Connect with skilled writers, post assignments, manage bids, and handle payments seamlessly. Your complete academic writing solution platform.",
+  applicationName: "Assignment Point",
+  keywords: ["assignments", "academic writing", "writers", "freelance", "education"],
+  authors: [{ name: "Assignment Point" }],
+  creator: "Assignment Point",
+  openGraph: {
+    title: "Assignment Point",
+    description: "Connect with skilled writers, post assignments, and manage your academic work.",
+    type: "website",
+    siteName: "Assignment Point",
+  },
   icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-      {
-        url: "/icon.svg",
-        type: "image/svg+xml",
-      },
-    ],
-    apple: "/apple-icon.png",
+    icon: "/assignment-point-favicon.jpg",
+    apple: "/assignment-point-logo.jpg",
   },
 }
 
@@ -38,7 +34,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={`font-sans antialiased`}>
+      <head>
+        <script async src="https://js.stripe.com/v3/" />
+      </head>
+      <body className={`${geist.className} ${geistMono.className} font-sans antialiased`}>
         <AuthProvider>{children}</AuthProvider>
         <Analytics />
       </body>

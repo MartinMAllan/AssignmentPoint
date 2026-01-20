@@ -1,32 +1,40 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { disputeService, type Dispute, type DisputeStats } from "@/lib/api/disputes.service"
 
 export default function DisputesPage() {
-  const disputes = [
-    {
-      id: "1",
-      orderId: "#10151816",
-      customer: "John Smith",
-      writer: "Jane Doe",
-      reason: "Quality concerns",
-      status: "open",
-      createdAt: "2025-12-18",
-    },
-    {
-      id: "2",
-      orderId: "#10151815",
-      customer: "Mary Johnson",
-      writer: "Tom Brown",
-      reason: "Missed deadline",
-      status: "investigating",
-      createdAt: "2025-12-17",
-    },
-  ]
+  const [stats, setStats] = useState<DisputeStats>({ open: 0, investigating: 0, resolved: 0 })
+  const [disputes, setDisputes] = useState<Dispute[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      const [statsData, disputesData] = await Promise.all([
+        disputeService.getDisputeStats(),
+        disputeService.getActiveDisputes(),
+      ])
+      setStats(statsData)
+      setDisputes(disputesData)
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
+  const handleResolve = async (disputeId: string) => {
+    try {
+      await disputeService.resolveDispute(disputeId)
+      setDisputes(disputes.filter((d) => d.id !== disputeId))
+    } catch (error) {
+      console.error("[v0] Failed to resolve dispute:", error)
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -43,7 +51,7 @@ export default function DisputesPage() {
               <AlertCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-100">4</div>
+              <div className="text-2xl font-bold text-slate-100">{stats.open}</div>
             </CardContent>
           </Card>
           <Card className="bg-slate-900 border-slate-800">
@@ -52,7 +60,7 @@ export default function DisputesPage() {
               <Clock className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-100">7</div>
+              <div className="text-2xl font-bold text-slate-100">{stats.investigating}</div>
             </CardContent>
           </Card>
           <Card className="bg-slate-900 border-slate-800">
@@ -61,7 +69,7 @@ export default function DisputesPage() {
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-slate-100">45</div>
+              <div className="text-2xl font-bold text-slate-100">{stats.resolved}</div>
             </CardContent>
           </Card>
         </div>
@@ -71,39 +79,51 @@ export default function DisputesPage() {
             <CardTitle className="text-slate-100">Active Disputes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {disputes.map((dispute) => (
-                <div key={dispute.id} className="flex items-center justify-between border-b border-slate-800 pb-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-slate-100">{dispute.orderId}</p>
-                      <Badge
-                        variant="outline"
-                        className={
-                          dispute.status === "open"
-                            ? "bg-red-500/10 text-red-400 border-red-500/20"
-                            : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                        }
-                      >
-                        {dispute.status}
-                      </Badge>
+            {loading ? (
+              <p className="text-slate-400">Loading disputes...</p>
+            ) : disputes.length === 0 ? (
+              <p className="text-slate-400">No active disputes</p>
+            ) : (
+              <div className="space-y-4">
+                {disputes.map((dispute) => (
+                  <div key={dispute.id} className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-slate-100">{dispute.orderId}</p>
+                        <Badge
+                          variant="outline"
+                          className={
+                            dispute.status === "open"
+                              ? "bg-red-500/10 text-red-400 border-red-500/20"
+                              : dispute.status === "investigating"
+                                ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
+                                : "bg-green-500/10 text-green-400 border-green-500/20"
+                          }
+                        >
+                          {dispute.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-slate-400">
+                        {dispute.customer} vs {dispute.writer}
+                      </p>
+                      <p className="text-sm text-slate-500">{dispute.reason}</p>
                     </div>
-                    <p className="text-sm text-slate-400">
-                      {dispute.customer} vs {dispute.writer}
-                    </p>
-                    <p className="text-sm text-slate-500">{dispute.reason}</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700">
+                        View Details
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90"
+                        onClick={() => handleResolve(dispute.id)}
+                      >
+                        Resolve
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700">
-                      View Details
-                    </Button>
-                    <Button size="sm" className="bg-primary hover:bg-primary/90">
-                      Resolve
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

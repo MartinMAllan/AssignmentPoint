@@ -1,13 +1,14 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/lib/auth-context"
+import { transactionService } from "@/lib/api/transaction.service"
 import { format } from "date-fns"
 import { DollarSign, TrendingUp, TrendingDown, Clock } from "lucide-react"
-import { useEffect, useState } from "react"
-import { useAuth } from "@/lib/auth-context"
-import { transactionService, type Transaction } from "@/lib/api/transaction.service"
+import type { Transaction } from "@/lib/api/transaction.service"
 
 export default function TransactionsPage() {
   const { user } = useAuth()
@@ -16,26 +17,24 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadTransactions = async () => {
-      if (!user?.id) {
-        setLoading(false)
-        return
-      }
+    const fetchTransactions = async () => {
+      if (!user?.id) return
 
       try {
         setLoading(true)
-        setError(null)
         const data = await transactionService.getUserTransactions(Number(user.id))
-        setTransactions(data)
+        setTransactions(Array.isArray(data) ? data : [])
+        setError(null)
       } catch (err) {
-        console.error("[v0] Error loading transactions:", err)
-        setError(err instanceof Error ? err.message : "Failed to load transactions")
+        console.error("[v0] Failed to fetch transactions:", err)
+        setError("Failed to load transactions")
+        setTransactions([])
       } finally {
         setLoading(false)
       }
     }
 
-    loadTransactions()
+    fetchTransactions()
   }, [user?.id])
 
   const getTransactionIcon = (type: string) => {
@@ -58,36 +57,13 @@ export default function TransactionsPage() {
     return colors[status] || colors.pending
   }
 
-  const totalEarnings = transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + t.amount, 0)
-  const pendingEarnings = transactions.filter((t) => t.status === "pending").reduce((sum, t) => sum + t.amount, 0)
+  const totalEarnings = Array.isArray(transactions)
+    ? transactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + t.amount, 0)
+    : 0
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-100">Transactions</h1>
-            <p className="text-slate-400 mt-1">Track your earnings and payments</p>
-          </div>
-          <p className="text-slate-400">Loading transactions...</p>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  if (error) {
-    return (
-      <DashboardLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-100">Transactions</h1>
-            <p className="text-slate-400 mt-1">Track your earnings and payments</p>
-          </div>
-          <p className="text-red-400">Error: {error}</p>
-        </div>
-      </DashboardLayout>
-    )
-  }
+  const pendingEarnings = Array.isArray(transactions)
+    ? transactions.filter((t) => t.status === "pending").reduce((sum, t) => sum + t.amount, 0)
+    : 0
 
   return (
     <DashboardLayout>
@@ -142,11 +118,12 @@ export default function TransactionsPage() {
             <CardTitle className="text-slate-100">Recent Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {transactions.length === 0 ? (
-                <p className="text-slate-400">No transactions yet</p>
-              ) : (
-                transactions.map((transaction) => (
+            {loading && <p className="text-slate-400">Loading transactions...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+            {!loading && transactions.length === 0 && <p className="text-slate-400">No transactions yet</p>}
+            {!loading && transactions.length > 0 && (
+              <div className="space-y-3">
+                {transactions.map((transaction) => (
                   <div
                     key={transaction.id}
                     className="flex items-center justify-between p-4 bg-slate-800 rounded-lg hover:bg-slate-750 transition-colors"
@@ -171,9 +148,9 @@ export default function TransactionsPage() {
                       </Badge>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
