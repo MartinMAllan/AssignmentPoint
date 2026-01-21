@@ -25,7 +25,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { useToast } from "@/frontend/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type { Order, Bid } from "@/lib/types"
 

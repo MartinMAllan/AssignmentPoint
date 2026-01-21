@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, Briefcase } from "lucide-react"
 import { useState, useMemo, useEffect } from "react"
-import { useToast } from "@/frontend/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import type { Order } from "@/lib/types"
 
 export default function AvailableOrdersPage() {

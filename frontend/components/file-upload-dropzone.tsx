@@ -5,7 +5,7 @@ import { useState, useCallback } from "react"
 import { Upload, X, FileText, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { useToast } from "@/frontend/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export interface UploadedFile {
   id: string
