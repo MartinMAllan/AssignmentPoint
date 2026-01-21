@@ -6,11 +6,21 @@ import { Clock, AlertCircle, DollarSign, FileText, Calendar } from "lucide-react
 import { format, formatDistanceToNow } from "date-fns"
 import Link from "next/link"
 
+function parseDate(value?: string | null): Date | null {
+  if (!value) return null
+
+  const date = new Date(value)
+  return isNaN(date.getTime()) ? null : date
+}
+
 interface OrderCardProps {
   order: Order
 }
 
 export function OrderCard({ order }: OrderCardProps) {
+  // Parse deadline ONCE, safely
+  const deadlineDate = parseDate(order.deadline)
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -22,15 +32,15 @@ export function OrderCard({ order }: OrderCardProps) {
       canceled: "bg-gray-500/10 text-gray-500 border-gray-500/20",
       disputed: "bg-red-500/10 text-red-500 border-red-500/20",
     }
-    return colors[status] || colors.pending
+
+    return colors[status?.toLowerCase()] || colors.pending
   }
 
-  const getStatusLabel = (status: string) => {
-    return status
-      .split("_")
+  const getStatusLabel = (status: string) =>
+    status
+      ?.split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ")
-  }
 
   return (
     <Card className="bg-slate-900 border-slate-800 hover:border-slate-700 transition-colors">
@@ -39,7 +49,10 @@ export function OrderCard({ order }: OrderCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="h-4 w-4 text-slate-400" />
-              <span className="text-xs text-slate-400">ID {order.orderNumber}</span>
+              <span className="text-xs text-slate-400">
+                ID {order.orderNumber}
+              </span>
+
               {order.isOverdue && (
                 <Badge className="bg-red-500/10 text-red-500 border-red-500/20">
                   <AlertCircle className="h-3 w-3 mr-1" />
@@ -47,12 +60,20 @@ export function OrderCard({ order }: OrderCardProps) {
                 </Badge>
               )}
             </div>
-            <CardTitle className="text-lg text-slate-100 line-clamp-1">{order.title}</CardTitle>
+
+            <CardTitle className="text-lg text-slate-100 line-clamp-1">
+              {order.title}
+            </CardTitle>
           </div>
-          <Badge className={getStatusColor(order.status)}>{getStatusLabel(order.status)}</Badge>
+
+          <Badge className={getStatusColor(order.status)}>
+            {getStatusLabel(order.status)}
+          </Badge>
         </div>
       </CardHeader>
+
       <CardContent className="space-y-3">
+        {/* Type & Subject */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-slate-400 text-xs mb-1">Type</p>
@@ -64,39 +85,52 @@ export function OrderCard({ order }: OrderCardProps) {
           </div>
         </div>
 
+        {/* Pages & Words */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-slate-400 text-xs mb-1">Pages/Slides</p>
-            <p className="text-slate-200 font-medium">{order.pagesOrSlides}</p>
+            <p className="text-slate-400 text-xs mb-1">Pages / Slides</p>
+            <p className="text-slate-200 font-medium">
+              {order.pagesOrSlides}
+            </p>
           </div>
           <div>
             <p className="text-slate-400 text-xs mb-1">Words</p>
-            <p className="text-slate-200 font-medium">{order.words.toLocaleString()}</p>
+            <p className="text-slate-200 font-medium">
+              {order.words?.toLocaleString()}
+            </p>
           </div>
         </div>
 
+        {/* Amount & Deadline */}
         <div className="flex items-center gap-4 pt-2 border-t border-slate-800">
           <div className="flex items-center gap-2 text-sm">
             <DollarSign className="h-4 w-4 text-green-500" />
             <span className="text-slate-200 font-semibold">
-              {order.currency} {order.totalAmount.toLocaleString()}
+              {order.currency}{" "}
+              {order.totalAmount?.toLocaleString()}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Calendar className="h-4 w-4" />
-            <span>{format(order.deadline, "MMM dd, HH:mm")}</span>
-          </div>
+
+          {deadlineDate && (
+            <div className="flex items-center gap-2 text-sm text-slate-400">
+              <Calendar className="h-4 w-4" />
+              <span>{format(deadlineDate, "MMM dd, HH:mm")}</span>
+            </div>
+          )}
         </div>
 
-        {order.deadline && (
+        {/* Relative deadline */}
+        {deadlineDate && (
           <div className="text-xs text-slate-400 flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            Due {formatDistanceToNow(order.deadline, { addSuffix: true })}
+            Due {formatDistanceToNow(deadlineDate, { addSuffix: true })}
           </div>
         )}
 
         <Link href={`/orders/${order.id}`}>
-          <Button className="w-full bg-primary hover:bg-primary/90">View Details</Button>
+          <Button className="w-full bg-primary hover:bg-primary/90">
+            View Details
+          </Button>
         </Link>
       </CardContent>
     </Card>

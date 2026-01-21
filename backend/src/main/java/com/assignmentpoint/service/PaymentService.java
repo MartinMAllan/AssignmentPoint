@@ -80,14 +80,12 @@ public class PaymentService {
 
         if ("succeeded".equals(paymentIntent.getStatus())) {
             payment.setStatus(Payment.PaymentStatus.COMPLETED);
-            // Get charge ID from the latest charge in the payment intent
             String latestChargeId = paymentIntent.getLatestCharge();
             if (latestChargeId != null) {
                 payment.setStripeChargeId(latestChargeId);
             }
             paymentRepository.save(payment);
 
-            // Update customer wallet
             addFundsToWallet(payment.getCustomer(), payment.getAmount(), payment.getId(), "DEPOSIT");
         } else if ("payment_failed".equals(paymentIntent.getStatus())) {
             payment.setStatus(Payment.PaymentStatus.FAILED);
@@ -105,7 +103,6 @@ public class PaymentService {
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
 
-        // Create payment record for PayPal
         Payment payment = Payment.builder()
                 .customer(customer)
                 .paymentMethod(Payment.PaymentMethod.PAYPAL)
@@ -117,8 +114,6 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // In production, create PayPal order here
-        // This is a placeholder for PayPal integration
         String paypalRedirectUrl = String.format(
                 "/api/payments/paypal/create-order?paymentId=%d&amount=%.2f",
                 payment.getId(),

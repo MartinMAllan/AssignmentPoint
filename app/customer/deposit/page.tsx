@@ -98,7 +98,7 @@ function StripeDepositForm({ amount, setAmount, loading, setLoading }: any) {
     setLoading(true)
     try {
       console.log("[v0] Initiating Stripe deposit for amount:", amount)
-      const response = await createStripeDeposit(parseFloat(amount), 'Customer wallet deposit')
+      const response = await createStripeDeposit(parseFloat(amount), 'Customer wallet deposit', 'GB')
       console.log("[v0] Stripe deposit response:", response)
       setClientSecret(response.clientSecret || response.data?.clientSecret)
       setStep('payment')
@@ -145,7 +145,12 @@ function StripeDepositForm({ amount, setAmount, loading, setLoading }: any) {
             </div>
           </div>
         ) : (
-          <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <Elements stripe={stripePromise} options={{ 
+            clientSecret,
+            appearance: {
+              theme: 'night'
+            }
+          }}>
             <StripeCheckoutForm amount={amount} clientSecret={clientSecret} onSuccess={() => window.location.href = '/dashboard'} />
           </Elements>
         )}

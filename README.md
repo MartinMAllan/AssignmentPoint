@@ -1,125 +1,47 @@
-# Assignment Point
+## Core Purpose
 
-A comprehensive academic writing service management platform with separate interfaces for writers, customers, sales agents, editors, and administrators.
+A multi-role platform that connects **customers** who need writing services with **writers** who complete orders, managed by **administrators**, **editors**, **managers**, and **sales agents**.
 
-## Features
+## Key Features
 
-- **Multi-Role Support**: Writers, Customers, Sales Agents, Editors, Admins, Writer Managers
-- **Order Management**: Create, bid, assign, track orders
-- **Revenue Sharing**: Automated commission distribution
-- **Real-time Messaging**: Communication between all parties
-- **File Management**: Upload and download order materials
-- **Transaction Tracking**: Complete financial transparency
+### User Roles & Dashboards
+
+- **Customers**: Post orders, deposit funds to wallet, track order progress, request revisions
+- **Writers**: Browse available orders, place bids, accept assignments, submit completed work, earn money
+- **Sales Agents**: Manage customer relationships, track their referred customers' orders
+- **Editors**: Review and manage order quality
+- **Managers**: Oversee operations and team performance
+- **Admins**: Full system control including user management, analytics, revenue tracking, dispute resolution
+
+### Order Management
+
+- Customers create orders with title, description, academic level, deadline, pages, price
+- Orders go through statuses: AVAILABLE, BIDDING, IN_PROGRESS, SUBMITTED, REVISION, COMPLETED, CANCELLED, DISPUTED
+- Writers bid on available orders; customers or admins can accept bids
+- File upload/download for order materials and submissions
+
+### Payment System
+
+- Wallet-based system with Stripe integration for deposits
+- Writers have earnings balance and pending balance
+- Transaction tracking for all financial movements
+- Refund request handling
+
+### Messaging
+
+- In-app messaging between users related to orders
+- Conversation threads per order
+
+### Admin Features
+
+- Analytics dashboard with revenue charts, order distribution, user growth
+- User management (CRUD operations, role changes)
+- Revenue management and reporting
+- Dispute resolution system
+- System settings configuration
 
 ## Tech Stack
 
-**Frontend:**
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- Shadcn UI
-
-**Backend:**
-- Spring Boot 3.2
-- Java 17
-- MySQL 8
-- JWT Authentication
-- Spring Security
-
-## Quick Start
-
-### Prerequisites
-- Node.js 18+
-- Java 17+
-- Maven 3.6+
-- MySQL 8.0+
-
-### Database Setup
-```bash
-mysql -u root -p
-CREATE DATABASE assignment_point;
-exit
-
-# Import schema
-mysql -u root -p assignment_point < database/schema.sql
-```
-
-### Backend Setup
-```bash
-cd backend
-mvn clean install
-mvn spring-boot:run
-```
-
-Backend runs on \`http://localhost:8080\`
-
-### Frontend Setup
-```bash
-npm install
-npm run dev
-```
-
-Frontend runs on \`http://localhost:3000\`
-
-## Default Login Credentials
-
-After running the database schema, you can login with:
-
-- **Admin**: admin@assignmentpoint.com / admin123
-- **Writer**: writer@assignmentpoint.com / writer123
-- **Customer**: customer@assignmentpoint.com / customer123
-
-## API Documentation
-
-The backend API runs on \`http://localhost:8080/api\`
-
-### Health Check
-```
-GET /api/health
-```
-
-### Authentication
-```
-POST /auth/register
-POST /auth/login
-```
-
-### Orders
-```
-GET /orders
-POST /orders
-GET /orders/{id}
-GET /orders/available
-```
-
-### Bids
-```
-POST /bids
-GET /bids/order/{orderId}
-POST /bids/{id}/accept
-```
-
-## Project Structure
-
-```
-assignment-point/
-├── app/                    # Next.js pages
-├── components/             # React components
-├── lib/                    # Utilities and services
-├── backend/                # Spring Boot backend
-│   ├── src/
-│   │   ├── main/
-│   │   │   ├── java/
-│   │   │   └── resources/
-│   └── pom.xml
-└── database/              # SQL schema
-```
-
-## License
-
-Proprietary - All rights reserved
-
-## Support
-
-For support, email support@assignmentpoint.com
+- **Frontend**: Next.js 16 with React, TypeScript, Tailwind CSS, shadcn/ui components
+- **Backend**: Spring Boot (Java) with JPA/Hibernate, JWT authentication
+- **Database**: PostgreSQL with comprehensive schema for users, orders, bids, transactions, messages
