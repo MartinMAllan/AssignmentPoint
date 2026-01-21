@@ -10,6 +10,7 @@ import java.util.Optional;
 public interface OrderBidRepository extends JpaRepository<OrderBid, Long> {
     List<OrderBid> findByOrderId(Long orderId);
     List<OrderBid> findByWriterId(Long writerId);
+    List<OrderBid> findByStatus(OrderBid.BidStatus status);
     Optional<OrderBid> findByOrderIdAndWriterId(Long orderId, Long writerId);
     List<OrderBid> findByOrderIdAndStatus(Long orderId, OrderBid.BidStatus status);
 }

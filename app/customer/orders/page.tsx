@@ -4,64 +4,100 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Clock, DollarSign, FileText, Users } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Clock, DollarSign, FileText, Users, Loader, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { orderService } from "@/lib/api/order.service"
-import { bidService } from "@/lib/api/bid.service"
-import type { Order, Bid } from "@/lib/types"
+import type { Order } from "@/lib/types"
+
+const ORDER_STATUSES = [
+  { value: "available", label: "AVAILABLE" },
+  { value: "pending", label: "PENDING" },
+  { value: "in_progress", label: "IN PROGRESS" },
+  { value: "in_review", label: "IN REVIEW" },
+  { value: "revision", label: "REVISION" },
+  { value: "completed", label: "COMPLETED" },
+  { value: "canceled", label: "CANCELED" },
+  { value: "disputed", label: "DISPUTED" },
+]
 
 export default function CustomerOrdersPage() {
   const { user } = useAuth()
-  const searchParams = useSearchParams()
-  const statusFilter = searchParams?.get("status")
   const [orders, setOrders] = useState<Order[]>([])
-  const [bids, setBids] = useState<Bid[]>([])
-  const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedTab, setSelectedTab] = useState("available")
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
 
   useEffect(() => {
-    const loadData = async () => {
+    const fetchOrders = async () => {
       try {
         setLoading(true)
-        if (user?.id) {
-          const ordersData = await orderService.getOrdersByCustomer(Number(user.id))
-          setOrders(ordersData)
-          const allBids: Bid[] = []
-          for (const order of ordersData) {
-            try {
-              const orderBidsData = await bidService.getBidsByOrder(Number(order.id))
-              allBids.push(...orderBidsData)
-            } catch (err) {
-              console.error(`[v0] Error loading bids for order ${order.id}:`, err)
-            }
-          }
-          setBids(allBids)
-        }
+        console.log("[v0] Fetching orders for customer:", user?.id)
+        
+        // Fetch orders for the current customer
+        const fetchedOrders = await orderService.getOrdersByCustomer(Number(user?.id))
+        console.log("[v0] Orders fetched:", fetchedOrders.length)
+        console.log("[v0] Order statuses:", fetchedOrders.map(o => o.status))
+        
+        setOrders(fetchedOrders)
+        setError(null)
       } catch (err) {
-        console.error("[v0] Error loading orders:", err)
+        console.error("[v0] Error fetching orders:", err)
+        setError(err instanceof Error ? err.message : "Failed to load orders")
       } finally {
         setLoading(false)
       }
     }
 
-    loadData()
+    if (user?.id) {
+      fetchOrders()
+    }
   }, [user?.id])
 
-  const customerOrders = orders.filter((o) => !statusFilter || o.status === statusFilter)
-
-  const getOrderBids = (orderId: string | number) => {
-    const orderIdString = orderId.toString()
-    return bids.filter((bid) => bid.orderId.toString() === orderIdString)
+  const getStatusDisplay = (status: string): string => {
+    return status.replace(/_/g, " ").toUpperCase()
   }
+
+  const getStatusColor = (status: string) => {
+    const statusLower = status.toLowerCase()
+    switch (statusLower) {
+      case "available":
+        return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+      case "pending":
+        return "bg-orange-500/20 text-orange-400 border-orange-500/30"
+      case "in_progress":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30"
+      case "in_review":
+        return "bg-purple-500/20 text-purple-400 border-purple-500/30"
+      case "revision":
+        return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+      case "completed":
+        return "bg-green-500/20 text-green-400 border-green-500/30"
+      case "canceled":
+        return "bg-red-500/20 text-red-400 border-red-500/30"
+      case "disputed":
+        return "bg-red-500/20 text-red-400 border-red-500/30"
+      default:
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30"
+    }
+  }
+
+  const filteredOrders = orders.filter((order) => {
+    const orderStatus = order.status?.toLowerCase().replace(/ /g, "_")
+    return orderStatus === selectedTab
+  })
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="text-center py-12">
-          <p className="text-slate-400">Loading orders...</p>
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center gap-2">
+            <Loader className="h-5 w-5 animate-spin text-blue-500" />
+            <p className="text-slate-400">Loading your orders...</p>
+          </div>
         </div>
       </DashboardLayout>
     )
@@ -80,122 +116,99 @@ export default function CustomerOrdersPage() {
           </Link>
         </div>
 
-        <div className="grid gap-4">
-          {customerOrders.length === 0 ? (
-            <Card className="bg-slate-900 border-slate-800">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-slate-600 mb-4" />
-                <h3 className="text-lg font-semibold text-slate-300 mb-2">No orders found</h3>
-                <p className="text-slate-500 text-center">Post a new order to get started</p>
-              </CardContent>
-            </Card>
-          ) : (
-            customerOrders.map((order) => {
-              const orderBids = getOrderBids(order.id)
-              const isExpanded = selectedOrder === order.id.toString()
+        {error && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <p className="text-red-400">{error}</p>
+          </div>
+        )}
 
-              return (
-                <Card key={order.id} className="bg-slate-900 border-slate-800">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-slate-100">{order.title}</CardTitle>
-                        <p className="text-sm text-slate-400">Order #{order.orderNumber}</p>
-                      </div>
-                      <Badge
-                        variant={
-                          order.status === "available"
-                            ? "default"
-                            : order.status === "completed"
-                              ? "default"
-                              : "secondary"
-                        }
-                        className={
-                          order.status === "available"
-                            ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                            : order.status === "completed"
-                              ? "bg-green-500/20 text-green-400 border-green-500/30"
-                              : "bg-purple-500/20 text-purple-400 border-purple-500/30"
-                        }
-                      >
-                        {order.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-300">{order.subject}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-300">{new Date(order.deadline).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-300">${order.totalAmount}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Users className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-300">{orderBids.length} Bids</span>
-                      </div>
-                    </div>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-8 bg-slate-900 border-b border-slate-800 overflow-x-auto">
+            {ORDER_STATUSES.map((status) => (
+              <TabsTrigger
+                key={status.value}
+                value={status.value}
+                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none text-xs md:text-sm"
+              >
+                {status.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-                    <div className="flex gap-2">
-                      <Link href={`/orders/${order.id}`} className="flex-1">
-                        <Button
-                          variant="outline"
-                          className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 bg-transparent"
-                        >
-                          View Details
-                        </Button>
-                      </Link>
-                      {order.status === "available" && orderBids.length > 0 && (
-                        <Button
-                          onClick={() => setSelectedOrder(isExpanded ? null : order.id.toString())}
-                          className="flex-1"
-                        >
-                          {isExpanded ? "Hide Bids" : `View ${orderBids.length} Bids`}
-                        </Button>
-                      )}
-                    </div>
+          {ORDER_STATUSES.map((status) => (
+            <TabsContent key={status.value} value={status.value} className="space-y-4 mt-6">
+              {filteredOrders.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-slate-400">No orders found in {status.label} status</p>
+                </div>
+              ) : (
+                filteredOrders.map((order) => {
+                  const isExpanded = selectedOrder === order.id
 
-                    {isExpanded && orderBids.length > 0 && (
-                      <div className="border-t border-slate-800 pt-4 space-y-3">
-                        <h4 className="font-medium text-slate-200">Writer Bids</h4>
-                        {orderBids.map((bid) => (
-                          <div key={bid.id} className="bg-slate-800 p-4 rounded-lg space-y-3">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="font-medium text-slate-200">Writer #{bid.writerId}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-lg font-bold text-slate-100">${bid.bidAmount}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button size="sm" className="flex-1">
-                                Accept Bid
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-slate-700 text-slate-300 bg-transparent"
-                              >
-                                Message Writer
-                              </Button>
-                            </div>
+                  return (
+                    <Card key={order.id} className="bg-slate-900 border-slate-800">
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-slate-100">{order.title}</CardTitle>
+                            <p className="text-sm text-slate-400">Order #{order.orderNumber}</p>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })
-          )}
-        </div>
+                          <Badge variant="outline" className={getStatusColor(order.status)}>
+                            {getStatusDisplay(order.status)}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="flex items-center gap-2 text-sm">
+                            <FileText className="h-4 w-4 text-slate-400" />
+                            <span className="text-slate-300">{order.subject}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-slate-400" />
+                            <span className="text-slate-300">
+                              {order.deadline instanceof Date
+                                ? order.deadline.toLocaleDateString()
+                                : new Date(order.deadline).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <DollarSign className="h-4 w-4 text-slate-400" />
+                            <span className="text-slate-300">${order.totalAmount}</span>
+                          </div>
+                          {order.writerId && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Users className="h-4 w-4 text-slate-400" />
+                              <span className="text-slate-300">Writer Assigned</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <Link href={`/orders/${order.id}`} className="flex-1">
+                            <Button
+                              variant="outline"
+                              className="w-full border-slate-700 text-slate-300 hover:bg-slate-800 bg-transparent"
+                            >
+                              View Details
+                            </Button>
+                          </Link>
+                          {order.status === "in_review" && (
+                            <Button className="flex-1">Request Revision</Button>
+                          )}
+                          {order.status === "completed" && (
+                            <Button className="flex-1">Download Files</Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
+            </TabsContent>
+          ))}
+        </Tabs>
       </div>
     </DashboardLayout>
   )

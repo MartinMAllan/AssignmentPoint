@@ -14,8 +14,13 @@ import java.time.LocalDateTime;
 public class BidDTO {
     private Long id;
     private Long orderId;
+    private String orderNumber;
+    private String orderTitle;
+    private BigDecimal orderAmount;
+    private LocalDateTime orderDeadline;
     private Long writerId;
     private String writerName;
+    private String writerEmail;
     private BigDecimal writerRating;
     private Integer writerCompletedOrders;
     private BigDecimal bidAmount;

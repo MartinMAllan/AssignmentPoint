@@ -44,7 +44,22 @@ public class BidController {
         BidDTO bid = bidService.acceptBid(bidId);
         return ResponseEntity.ok(ApiResponse.success("Bid accepted", bid));
     }
-    
+
+    // Admin endpoints for bid management
+    @GetMapping("/admin/all")
+    public ResponseEntity<ApiResponse<List<BidDTO>>> getAllBids(
+            @RequestParam(required = false) String status) {
+        List<BidDTO> bids = bidService.getAllBids(status);
+        return ResponseEntity.ok(ApiResponse.success("All bids retrieved", bids));
+    }
+
+    @GetMapping("/admin/pending")
+    public ResponseEntity<ApiResponse<List<BidDTO>>> getPendingBids() {
+        List<BidDTO> bids = bidService.getAllBids("PENDING");
+        return ResponseEntity.ok(ApiResponse.success("Pending bids retrieved", bids));
+    }
+
+
     @PostMapping("/{bidId}/reject")
     public ResponseEntity<ApiResponse<Void>> rejectBid(@PathVariable Long bidId) {
         bidService.rejectBid(bidId);

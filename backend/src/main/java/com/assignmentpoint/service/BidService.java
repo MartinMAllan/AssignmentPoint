@@ -115,6 +115,23 @@ public class BidService {
         bid.setStatus(OrderBid.BidStatus.REJECTED);
         bidRepository.save(bid);
     }
+
+    public List<BidDTO> getAllBids(String status) {
+        List<OrderBid> bids;
+        if (status != null && !status.isEmpty()) {
+            try {
+                OrderBid.BidStatus bidStatus = OrderBid.BidStatus.valueOf(status.toUpperCase());
+                bids = bidRepository.findByStatus(bidStatus);
+            } catch (IllegalArgumentException e) {
+                bids = bidRepository.findAll();
+            }
+        } else {
+            bids = bidRepository.findAll();
+        }
+        return bids.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
     
     @Transactional
     public void withdrawBid(Long bidId) {
