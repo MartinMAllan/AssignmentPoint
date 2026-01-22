@@ -29,6 +29,7 @@ import {
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { orderService } from "@/lib/api/order.service"
+import { fileService } from "@/lib/api/file.service"
 import type { Order } from "@/lib/types"
 
 export default function OrderDetailPage() {
@@ -48,27 +49,36 @@ export default function OrderDetailPage() {
   const isWriter = user?.role === "writer"
   const isAvailable = order?.status === "available"
 
-  useEffect(() => {
-    const fetchOrder = async () => {
-      try {
-        setLoading(true)
-        const orderId = Array.isArray(params.id) ? params.id[0] : params.id
-        const fetchedOrder = await orderService.getOrderById(Number(orderId))
-        setOrder(fetchedOrder)
-        setError(null)
-      } catch (err) {
-        console.error("[v0] Error fetching order:", err)
-        setError(err instanceof Error ? err.message : "Failed to load order")
-        setOrder(null)
-      } finally {
-        setLoading(false)
-      }
-    }
+ useEffect(() => {
+  const fetchOrder = async () => {
+    try {
+      setLoading(true)
 
-    if (params.id) {
-      fetchOrder()
+      const orderId = Array.isArray(params.id) ? params.id[0] : params.id
+      const numericOrderId = Number(orderId)
+
+      const fetchedOrder = await orderService.getOrderById(numericOrderId)
+      const files = await fileService.getOrderFiles(numericOrderId)
+
+      setOrder({
+        ...fetchedOrder,
+        files: files ?? [],
+      })
+
+      setError(null)
+    } catch (err) {
+      console.error("[v0] Error fetching order:", err)
+      setError(err instanceof Error ? err.message : "Failed to load order")
+      setOrder(null)
+    } finally {
+      setLoading(false)
     }
-  }, [params.id])
+  }
+
+  if (params.id) {
+    fetchOrder()
+  }
+}, [params.id])
 
   const handleSubmitBid = async () => {
     if (!bidAmount || !bidDeliveryHours) {
@@ -78,6 +88,8 @@ export default function OrderDetailPage() {
     console.log("[v0] Submitting bid:", { bidAmount, bidDeliveryHours, bidCoverLetter })
     // TODO: Implement bid submission
   }
+
+
 
   if (loading) {
     return (
@@ -348,11 +360,24 @@ export default function OrderDetailPage() {
                             <div>
                               <p className="font-medium">{file.fileName || `File ${index + 1}`}</p>
                               <p className="text-xs text-slate-400">
-                                {file.uploadedAt instanceof Date
+                              {(() => {
+                                if (!file.uploadedAt) return "Not specified"
+
+                                const date =
+                                  file.uploadedAt instanceof Date
+                                    ? file.uploadedAt
+                                    : new Date(file.uploadedAt)
+
+                                return isValid(date)
+                                  ? format(date, "MMM dd, yyyy HH:mm a")
+                                  : "Not specified"
+                              })()}
+                              
+                                {/* {file.uploadedAt instanceof Date
                                   ? format(file.uploadedAt, "MMM dd, HH:mm a")
                                   : file.uploadedAt
                                     ? format(new Date(file.uploadedAt), "MMM dd, HH:mm a")
-                                    : "Date unknown"}
+                                    : "Date unknown"} */}
                               </p>
                             </div>
                           </div>
