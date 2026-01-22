@@ -2,8 +2,8 @@ import apiClient, { type ApiResponse, handleApiError } from "../api-client"
 import type { Order } from "../types"
 
 export interface CreateOrderRequest {
-  title: string
-  description?: string
+   title: string
+  description: string
   type: string
   educationLevel: string
   subject: string

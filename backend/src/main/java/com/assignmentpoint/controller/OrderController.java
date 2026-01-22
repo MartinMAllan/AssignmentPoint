@@ -74,7 +74,11 @@ public class OrderController {
 
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<ApiResponse<List<OrderDTO>>> getOrdersByCustomer(@PathVariable Long customerId) {
-        List<OrderDTO> orders = orderService.getOrdersByCustomer(customerId);
+        Long customerId1 = customerRepository.findByUserId(customerId)
+                .map(Customer::getId)
+                .orElseThrow(() -> new UnauthorizedException("Customer profile not found for this user"));
+
+        List<OrderDTO> orders = orderService.getOrdersByCustomer(customerId1);
         return ResponseEntity.ok(ApiResponse.success("Customer orders retrieved", orders));
     }
 

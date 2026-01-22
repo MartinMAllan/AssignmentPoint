@@ -106,7 +106,7 @@ export interface Order {
   status: OrderStatus
 
   // Deadlines
-  deadline: Date
+  deadline?: Date
   startedAt?: Date
   submittedAt?: Date
   completedAt?: Date
@@ -115,6 +115,9 @@ export interface Order {
   isRevision: boolean
   isOverdue: boolean
   customerIsReturning: boolean
+
+  // Files associated with this order
+  files?: OrderFile[]
 
   createdAt: Date
   updatedAt: Date
@@ -147,10 +150,10 @@ export interface OrderFile {
 
 // Message
 export interface Message {
-  id: number
-  orderId: number
-  senderId: number
-  receiverId?: number
+  id: string
+  orderId: string
+  senderId: string
+  receiverId?: string
   messageText: string
   isRead: boolean
   readAt?: Date

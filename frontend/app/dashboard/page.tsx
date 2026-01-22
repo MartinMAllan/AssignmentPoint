@@ -32,34 +32,51 @@ export default function DashboardPage() {
     const fetchDashboardData = async () => {
       if (!user) return
 
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
       try {
         setIsLoading(true)
-        const statsData = await userService.getUserStats(Number(user.id))
-        setStats(statsData)
+        
+        // Try to fetch stats, but don't block if it fails
+        try {
+          const statsData = await userService.getUserStats(Number(user.id))
+          setStats(statsData)
+        } catch (statsError) {
+          console.warn("[v0] Failed to fetch user stats, using defaults:", statsError)
+          // Use default stats instead of failing
+          setStats({
+            available: 0,
+            inProgress: 0,
+            inReview: 0,
+            revision: 0,
+            disputed: 0,
+            completedPaid: 0,
+            totalEarnings: 0,
+          })
+        }
 
         let ordersData: Order[] = []
-        if (user.role === "writer") {
-          ordersData = (await orderService.getOrdersByWriter?.(Number(user.id))) || []
-        } else if (user.role === "customer") {
-          ordersData = (await orderService.getOrdersByCustomer?.(Number(user.id))) || []
-        } else {
-          ordersData = await orderService.getAllOrders({ page: 0, size: 6 })
+        try {
+          if (user.role === "writer") {
+            ordersData = (await orderService.getOrdersByWriter?.(Number(user.id))) || []
+          } else if (user.role === "customer") {
+            console.log("[v0] Dashboard: Fetching orders for customer with ID:", user.id)
+            ordersData = (await orderService.getOrdersByCustomer?.(Number(user.id))) || []
+            console.log("[v0] Dashboard: Customer orders fetched:", ordersData.length, "orders")
+          } else {
+            ordersData = await orderService.getAllOrders({ page: 0, size: 6 })
+          }
+        } catch (ordersError) {
+          console.warn("[v0] Failed to fetch orders:", ordersError)
+          ordersData = []
         }
 
         setRecentOrders(ordersData)
       } catch (error) {
         console.error("[v0] Failed to fetch dashboard data:", error)
-        setStats({
-          available: 0,
-          inProgress: 0,
-          inReview: 0,
-          revision: 0,
-          disputed: 0,
-          completedPaid: 0,
-          totalEarnings: 0,
-        })
-        setRecentOrders([])
       } finally {
+        clearTimeout(timeoutId)
         setIsLoading(false)
       }
     }

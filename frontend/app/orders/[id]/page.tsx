@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { format } from "date-fns"
+import { Textarea } from "@/components/ui/textarea"
+import { format, isValid } from "date-fns"
 import {
   Calendar,
   Clock,
@@ -21,9 +22,9 @@ import {
   Loader,
   User,
   Mail,
-  Phone,
-  BookOpen,
-  BarChart3,
+  MessageSquare,
+  Send,
+  BarChart3 // Import BarChart3
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
@@ -37,8 +38,15 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [newMessage, setNewMessage] = useState("")
+  const [bidAmount, setBidAmount] = useState("")
+  const [bidDeliveryHours, setBidDeliveryHours] = useState("")
+  const [bidCoverLetter, setBidCoverLetter] = useState("")
 
-  const isAdmin = user?.role === "ADMIN"
+  const isAdmin = user?.role === "admin"
+  const isCustomer = user?.role === "customer"
+  const isWriter = user?.role === "writer"
+  const isAvailable = order?.status === "available"
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -61,6 +69,15 @@ export default function OrderDetailPage() {
       fetchOrder()
     }
   }, [params.id])
+
+  const handleSubmitBid = async () => {
+    if (!bidAmount || !bidDeliveryHours) {
+      alert("Please fill in all bid details")
+      return
+    }
+    console.log("[v0] Submitting bid:", { bidAmount, bidDeliveryHours, bidCoverLetter })
+    // TODO: Implement bid submission
+  }
 
   if (loading) {
     return (
@@ -91,280 +108,346 @@ export default function OrderDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      AVAILABLE: "bg-blue-500",
-      BIDDING: "bg-purple-500",
-      IN_PROGRESS: "bg-yellow-500",
-      SUBMITTED: "bg-cyan-500",
-      REVISION: "bg-orange-500",
-      COMPLETED: "bg-green-500",
-      CANCELLED: "bg-red-500",
+      AVAILABLE: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      PENDING: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      BIDDING: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+      IN_PROGRESS: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      IN_REVIEW: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+      SUBMITTED: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
+      REVISION: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+      COMPLETED: "bg-green-500/20 text-green-400 border-green-500/30",
+      CANCELLED: "bg-red-500/20 text-red-400 border-red-500/30",
     }
-    return colors[status] || "bg-slate-500"
+    return colors[status] || "bg-slate-500/20 text-slate-400 border-slate-500/30"
+  }
+
+  // Build tab list based on user role
+  const getTabs = () => {
+    const baseTabs = ["General", "Instructions", "Files"]
+    if (isCustomer || isWriter) {
+      baseTabs.push("Messages")
+    }
+    return baseTabs
   }
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-white">{order.title}</h1>
-              <Badge className={`${getStatusColor(order.status)} text-white`}>{order.status}</Badge>
+              <h1 className="text-3xl font-bold">{order.title}</h1>
+              <Badge className={`${getStatusColor(order.status)}`}>{order.status}</Badge>
             </div>
             <p className="text-slate-400">Order ID: {order.orderNumber}</p>
           </div>
-          <Button onClick={() => router.back()} variant="outline">
+          {isWriter && isAvailable && (
+            <Button onClick={() => document.getElementById("bid-section")?.scrollIntoView()} className="bg-blue-600 hover:bg-blue-700">
+              Place Bid
+            </Button>
+          )}
+          <Button variant="outline" onClick={() => router.back()}>
             Back
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="general" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general">General</TabsTrigger>
-                <TabsTrigger value="instructions">Instructions</TabsTrigger>
-                <TabsTrigger value="files">Files</TabsTrigger>
-              </TabsList>
+        {/* Main Content */}
+        <Tabs defaultValue="General" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-slate-900 border border-slate-800">
+            {getTabs().map((tab) => (
+              <TabsTrigger key={tab} value={tab}>
+                {tab}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-              {/* General Tab */}
-              <TabsContent value="general" className="space-y-4">
+          {/* General Tab */}
+          <TabsContent value="General" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Content */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Order Information */}
                 <Card className="bg-slate-900 border-slate-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Order Information</CardTitle>
+                    <CardTitle>Order Information</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-slate-400 mb-1">Subject</p>
-                        <p className="text-white font-medium">{order.subject || "N/A"}</p>
+                        <p className="font-medium">{order.subject || order.title}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-slate-400 mb-1">Academic Level</p>
-                        <p className="text-white font-medium">{order.academicLevel || "N/A"}</p>
+                        <p className="text-sm text-slate-400 mb-1">Education Level</p>
+                        <p className="font-medium">{order.educationLevel || "Not specified"}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-400 mb-1">Order Type</p>
-                        <p className="text-white font-medium">{order.type || "N/A"}</p>
+                        <p className="font-medium">{order.type || "Not specified"}</p>
                       </div>
                       <div>
                         <p className="text-sm text-slate-400 mb-1">Language</p>
-                        <p className="text-white font-medium">{order.language || "English"}</p>
+                        <p className="font-medium">{order.language || "English (US)"}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Specifications */}
                 <Card className="bg-slate-900 border-slate-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Specifications</CardTitle>
+                    <CardTitle>Specifications</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-blue-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Pages/Slides</p>
-                          <p className="text-white font-medium">{order.pages || order.slides || "N/A"}</p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText className="h-4 w-4 text-slate-400" />
+                          <p className="text-sm text-slate-400">Pages / Slides</p>
                         </div>
+                        <p className="font-medium text-lg">{order.pagesOrSlides || "Not specified"}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4 text-blue-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Words Required</p>
-                          <p className="text-white font-medium">{order.words || "N/A"}</p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <BarChart3 className="h-4 w-4 text-slate-400" />
+                          <p className="text-sm text-slate-400">Words Required</p>
                         </div>
+                        <p className="font-medium text-lg">{order.words || "Not specified"}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-orange-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Deadline</p>
-                          <p className="text-white font-medium">
-                            {order.deadline instanceof Date
-                              ? format(order.deadline, "MMM dd, yyyy HH:mm a")
-                              : "N/A"}
-                          </p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Clock className="h-4 w-4 text-slate-400" />
+                          <p className="text-sm text-slate-400">Deadline</p>
                         </div>
+                        <p className="font-medium">
+                          {(() => {
+                            if (!order.deadline) return "Not specified"
+
+                            const date =
+                              order.deadline instanceof Date
+                                ? order.deadline
+                                : new Date(order.deadline)
+
+                            return isValid(date)
+                              ? format(date, "MMM dd, yyyy HH:mm a")
+                              : "Not specified"
+                          })()}
+                        </p>
+                        
                       </div>
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-green-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Budget</p>
-                          <p className="text-white font-medium">KES {order.totalAmount || 0}</p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <DollarSign className="h-4 w-4 text-slate-400" />
+                          <p className="text-sm text-slate-400">Budget</p>
                         </div>
+                        <p className="font-medium text-lg text-green-400">{order.currency} {order.totalAmount}</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* Timeline */}
                 <Card className="bg-slate-900 border-slate-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Timeline</CardTitle>
+                    <CardTitle>Timeline</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-400" />
-                      <div className="flex-1">
-                        <p className="text-xs text-slate-400">Created</p>
-                        <p className="text-white">
-                          {order.createdAt instanceof Date
-                            ? format(order.createdAt, "MMM dd, yyyy HH:mm")
-                            : "N/A"}
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <div>
+                        <p className="text-sm text-slate-400">Created</p>
+                         <p className="font-medium">
+                          {(() => {
+                            if (!order.createdAt) return "Not specified"
+
+                            const date =
+                              order.createdAt instanceof Date
+                                ? order.createdAt
+                                : new Date(order.createdAt)
+
+                            return isValid(date)
+                              ? format(date, "MMM dd, yyyy HH:mm a")
+                              : "Not specified"
+                          })()}
                         </p>
                       </div>
                     </div>
-                    {order.startedAt && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-blue-400" />
-                        <div className="flex-1">
-                          <p className="text-xs text-slate-400">Started</p>
-                          <p className="text-white">
-                            {order.startedAt instanceof Date
-                              ? format(order.startedAt, "MMM dd, yyyy HH:mm")
-                              : "N/A"}
-                          </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Sidebar */}
+              <div className="space-y-4">
+                {/* Customer Info */}
+                {isAdmin && (
+                  <Card className="bg-slate-900 border-slate-800">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Customer</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarFallback>C</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">Customer</p>
+                          <p className="text-xs text-slate-400">Order Creator</p>
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    </CardContent>
+                  </Card>
+                )}
 
-              {/* Instructions Tab */}
-              <TabsContent value="instructions" className="space-y-4">
+                {/* Order Stats */}
                 <Card className="bg-slate-900 border-slate-800">
                   <CardHeader>
-                    <CardTitle className="text-white">Order Instructions</CardTitle>
+                    <CardTitle className="text-lg">Order Stats</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-96 pr-4">
-                      <p className="text-slate-300 whitespace-pre-wrap">{order.description || "No instructions provided."}</p>
-                    </ScrollArea>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-sm text-slate-400 mb-1">Status</p>
+                      <Badge className={`${getStatusColor(order.status)}`}>{order.status}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-400 mb-1">Budget</p>
+                      <p className="font-medium text-lg text-green-400">{order.currency} {order.totalAmount}</p>
+                    </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              </div>
+            </div>
+          </TabsContent>
 
-              {/* Files Tab */}
-              <TabsContent value="files" className="space-y-4">
-                <Card className="bg-slate-900 border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="text-white">Order Files</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {order.files && order.files.length > 0 ? (
-                      <ScrollArea className="h-96">
-                        <div className="space-y-2 pr-4">
-                          {order.files.map((file) => (
-                            <div key={file.id} className="flex items-center justify-between p-3 bg-slate-800 rounded-lg border border-slate-700">
-                              <div className="flex items-center gap-3 flex-1">
-                                <FileText className="h-4 w-4 text-blue-400" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-medium text-white truncate">{file.filename}</p>
-                                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                                    <span>{file.size || "N/A"}</span>
-                                    <span>•</span>
-                                    <span>
-                                      {file.uploadedAt instanceof Date
-                                        ? format(file.uploadedAt, "MMM dd, HH:mm a")
-                                        : file.uploadedAt
-                                          ? format(new Date(file.uploadedAt), "MMM dd, HH:mm a")
-                                          : "N/A"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Download className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    ) : (
-                      <p className="text-slate-400 text-center py-8">No files uploaded</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Customer Info */}
+          {/* Instructions Tab */}
+          <TabsContent value="Instructions" className="space-y-4">
             <Card className="bg-slate-900 border-slate-800">
               <CardHeader>
-                <CardTitle className="text-white text-base">Customer</CardTitle>
+                <CardTitle>Order Instructions</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-blue-500">
-                      {order.customerName?.charAt(0).toUpperCase() || "C"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-white text-sm">{order.customerName || "Unknown"}</p>
-                    <p className="text-xs text-slate-400">Customer</p>
-                  </div>
-                </div>
-                {order.customerEmail && (
-                  <div className="flex items-start gap-2 text-xs">
-                    <Mail className="h-4 w-4 text-slate-500 mt-0.5" />
-                    <p className="text-slate-300">{order.customerEmail}</p>
-                  </div>
+              <CardContent>
+                <p className="text-slate-300 whitespace-pre-wrap">{order.description || "No instructions provided"}</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Files Tab */}
+          <TabsContent value="Files" className="space-y-4">
+            <Card className="bg-slate-900 border-slate-800">
+              <CardHeader>
+                <CardTitle>Order Files</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {order.files && order.files.length > 0 ? (
+                  <ScrollArea className="h-[400px]">
+                    <div className="space-y-3 pr-4">
+                      {order.files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-slate-800 rounded border border-slate-700">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-5 w-5 text-blue-400" />
+                            <div>
+                              <p className="font-medium">{file.fileName || `File ${index + 1}`}</p>
+                              <p className="text-xs text-slate-400">
+                                {file.uploadedAt instanceof Date
+                                  ? format(file.uploadedAt, "MMM dd, HH:mm a")
+                                  : file.uploadedAt
+                                    ? format(new Date(file.uploadedAt), "MMM dd, HH:mm a")
+                                    : "Date unknown"}
+                              </p>
+                            </div>
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <p className="text-slate-400">No files uploaded for this order</p>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Writer Info */}
-            {order.assignedWriter && (
+          {/* Messages Tab (for Customer and Writer) */}
+          {(isCustomer || isWriter) && (
+            <TabsContent value="Messages" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                  <CardTitle className="text-white text-base">Assigned Writer</CardTitle>
+                  <CardTitle>Messages</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-green-500">
-                        {order.assignedWriter.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-white text-sm">{order.assignedWriter}</p>
-                      <p className="text-xs text-slate-400">Writer</p>
+                <CardContent className="space-y-4">
+                  <ScrollArea className="h-[300px] border border-slate-800 rounded p-4">
+                    <div className="space-y-3">
+                      <p className="text-slate-400 text-center text-sm">No messages yet. Start a conversation!</p>
                     </div>
+                  </ScrollArea>
+
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Type your message here..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                      rows={3}
+                    />
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 gap-2">
+                      <Send className="h-4 w-4" />
+                      Send Message
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
-            )}
+            </TabsContent>
+          )}
+        </Tabs>
 
-            {/* Key Stats */}
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader>
-                <CardTitle className="text-white text-base">Order Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+        {/* Bid Section for Writers on Available Orders */}
+        {isWriter && isAvailable && (
+          <Card id="bid-section" className="bg-slate-900 border-slate-800">
+            <CardHeader>
+              <CardTitle>Place Your Bid</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Status</p>
-                  <Badge className={`${getStatusColor(order.status)} text-white`}>{order.status}</Badge>
+                  <label className="block text-sm text-slate-400 mb-2">Bid Amount ({order.currency})</label>
+                  <input
+                    type="number"
+                    placeholder="Enter your bid amount"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white placeholder:text-slate-500"
+                  />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400 mb-1">Budget</p>
-                  <p className="text-lg font-bold text-green-400">KES {order.totalAmount || 0}</p>
+                  <label className="block text-sm text-slate-400 mb-2">Delivery Time (hours)</label>
+                  <input
+                    type="number"
+                    placeholder="Enter delivery hours"
+                    value={bidDeliveryHours}
+                    onChange={(e) => setBidDeliveryHours(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-white placeholder:text-slate-500"
+                  />
                 </div>
-                {order.isOverdue && (
-                  <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
-                    <AlertTriangle className="h-4 w-4 text-red-400" />
-                    <p className="text-xs text-red-400">Order is overdue</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-400 mb-2">Cover Letter</label>
+                <Textarea
+                  placeholder="Explain why you're the best fit for this order..."
+                  value={bidCoverLetter}
+                  onChange={(e) => setBidCoverLetter(e.target.value)}
+                  className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                  rows={4}
+                />
+              </div>
+              <Button onClick={handleSubmitBid} className="w-full bg-green-600 hover:bg-green-700">
+                Submit Bid
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </DashboardLayout>
   )

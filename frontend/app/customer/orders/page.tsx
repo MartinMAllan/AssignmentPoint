@@ -33,28 +33,28 @@ export default function CustomerOrdersPage() {
 
   useEffect(() => {
     const fetchOrders = async () => {
+      if (!user?.id) return
+
       try {
         setLoading(true)
+        setError(null)
         console.log("[v0] Fetching orders for customer:", user?.id)
         
-        // Fetch orders for the current customer
-        const fetchedOrders = await orderService.getOrdersByCustomer(Number(user?.id))
-        console.log("[v0] Orders fetched:", fetchedOrders.length)
-        console.log("[v0] Order statuses:", fetchedOrders.map(o => o.status))
+        const fetchedOrders = await orderService.getOrdersByCustomer(Number(user.id))
         
+        console.log("[v0] Orders fetched successfully:", fetchedOrders.length)
         setOrders(fetchedOrders)
-        setError(null)
       } catch (err) {
         console.error("[v0] Error fetching orders:", err)
-        setError(err instanceof Error ? err.message : "Failed to load orders")
+        const errorMessage = err instanceof Error ? err.message : "Failed to load orders"
+        setError(errorMessage)
+        setOrders([])
       } finally {
         setLoading(false)
       }
     }
 
-    if (user?.id) {
-      fetchOrders()
-    }
+    fetchOrders()
   }, [user?.id])
 
   const getStatusDisplay = (status: string): string => {
@@ -124,17 +124,19 @@ export default function CustomerOrdersPage() {
         )}
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-8 bg-slate-900 border-b border-slate-800 overflow-x-auto">
-            {ORDER_STATUSES.map((status) => (
-              <TabsTrigger
-                key={status.value}
-                value={status.value}
-                className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none text-xs md:text-sm"
-              >
-                {status.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="inline-flex w-full min-w-max bg-slate-900 border-b border-slate-800">
+              {ORDER_STATUSES.map((status) => (
+                <TabsTrigger
+                  key={status.value}
+                  value={status.value}
+                  className="data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-none text-xs md:text-sm whitespace-nowrap px-3 py-2"
+                >
+                  {status.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
 
           {ORDER_STATUSES.map((status) => (
             <TabsContent key={status.value} value={status.value} className="space-y-4 mt-6">
