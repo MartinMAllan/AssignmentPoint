@@ -34,6 +34,16 @@ export interface OrderFilters {
   size?: number
 }
 
+function normalizeOrder(order: Order): Order {
+  return {
+    ...order,
+    deadline:
+      typeof order.deadline === "string"
+        ? new Date(order.deadline)
+        : order.deadline ?? null,
+  }
+}
+
 function normalizeDeadline(deadline: string | Date): string {
   if (deadline instanceof Date) {
     const pad = (n: number) => n.toString().padStart(2, "0")
@@ -53,22 +63,22 @@ function cleanPayload<T extends Record<string, any>>(payload: T): T {
 }
 
 export const orderService = {
-
+  
   async getAllOrders(filters?: OrderFilters): Promise<Order[]> {
     try {
       const response = await apiClient.get<ApiResponse<Order[]>>("/orders", {
         params: filters,
       })
-      return response.data.data
+      return response.data.data.map(normalizeOrder)
     } catch (error) {
       throw new Error(handleApiError(error))
     }
   },
-
+  
   async getOrderById(orderId: number): Promise<Order> {
     try {
       const response = await apiClient.get<ApiResponse<Order>>(`/orders/${orderId}`)
-      return response.data.data
+      return normalizeOrder(response.data.data)
     } catch (error) {
       throw new Error(handleApiError(error))
     }

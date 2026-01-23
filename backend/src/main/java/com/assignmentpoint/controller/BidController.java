@@ -2,9 +2,14 @@ package com.assignmentpoint.controller;
 
 import com.assignmentpoint.dto.BidDTO;
 import com.assignmentpoint.dto.CreateBidRequest;
+import com.assignmentpoint.entity.Customer;
+import com.assignmentpoint.entity.Writer;
+import com.assignmentpoint.exception.UnauthorizedException;
+import com.assignmentpoint.repository.WriterRepository;
 import com.assignmentpoint.service.BidService;
 import com.assignmentpoint.util.ApiResponse;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,16 +19,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/bids")
 @CrossOrigin(origins = "*")
+@AllArgsConstructor
 public class BidController {
-    
-    @Autowired
-    private BidService bidService;
-    
+
+    private final BidService bidService;
+    private final WriterRepository writerRepository;
+
+    public Long getWriterIdByUserId(Long userId) {
+        return writerRepository.findByUserId(userId)
+                .map(Writer::getId)
+                .orElseThrow(() -> new UnauthorizedException(
+                        "Writer profile not found for user with ID: " + userId));
+    }
     @PostMapping
-    public ResponseEntity<ApiResponse<BidDTO>> submitBid(
-            @RequestParam Long writerId,
-            @Valid @RequestBody CreateBidRequest request) {
-        BidDTO bid = bidService.submitBid(writerId, request);
+    public ResponseEntity<ApiResponse<BidDTO>> submitBid(@RequestBody CreateBidRequest request) {
+        BidDTO bid = bidService.submitBid(request);
         return ResponseEntity.ok(ApiResponse.success("Bid submitted successfully", bid));
     }
     
@@ -35,7 +45,8 @@ public class BidController {
     
     @GetMapping("/writer/{writerId}")
     public ResponseEntity<ApiResponse<List<BidDTO>>> getBidsByWriter(@PathVariable Long writerId) {
-        List<BidDTO> bids = bidService.getBidsByWriter(writerId);
+        Long writerId1 = getWriterIdByUserId(writerId);
+        List<BidDTO> bids = bidService.getBidsByWriter(writerId1);
         return ResponseEntity.ok(ApiResponse.success("Writer bids retrieved", bids));
     }
     

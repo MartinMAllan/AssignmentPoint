@@ -106,10 +106,10 @@ export interface Order {
   status: OrderStatus
 
   // Deadlines
-  deadline?: Date
-  startedAt?: Date
-  submittedAt?: Date
-  completedAt?: Date
+  deadline?: Date | null
+  startedAt?: Date | null
+  submittedAt?: Date | null
+  completedAt?: Date | null
 
   // Flags
   isRevision: boolean
@@ -119,8 +119,8 @@ export interface Order {
   // Files associated with this order
   files?: OrderFile[]
 
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 // Order Addon
@@ -144,8 +144,8 @@ export interface OrderFile {
   fileType: string
   fileCategory: "instruction" | "attachment" | "draft" | "final" | "revision" | "additional"
   isSeen: boolean
-  seenAt?: Date
-  uploadedAt: Date
+  seenAt?: string
+  uploadedAt: string
 }
 
 // Message
@@ -156,8 +156,8 @@ export interface Message {
   receiverId?: string
   messageText: string
   isRead: boolean
-  readAt?: Date
-  createdAt: Date
+  readAt?: string
+  createdAt: string
 }
 
 // Transaction
@@ -179,7 +179,7 @@ export interface Transaction {
   currency: string
   description: string
   status: "pending" | "completed" | "failed" | "reversed"
-  createdAt: Date
+  createdAt: string
 }
 
 // Revenue Distribution
@@ -199,7 +199,7 @@ export interface RevenueDistribution {
   profitAmount: number
   isReturningCustomer: boolean
   isDistributed: boolean
-  distributedAt?: Date
+  distributedAt?: string
 }
 
 // Dashboard Stats
@@ -227,8 +227,8 @@ export interface Bid {
   deliveryHours: number
   coverLetter: string
   status: "pending" | "accepted" | "rejected" | "withdrawn"
-  submittedAt: Date
-  createdAt: Date
+  submittedAt: string
+  createdAt: string
 }
 
 // Sales Agent Customer interface for sales agent dashboard
@@ -241,6 +241,6 @@ export interface SalesAgentCustomer {
   totalOrders: number
   totalSpent: number
   commissionEarned: number
-  joinedDate: Date
-  lastOrderDate: Date
+  joinedDate: string
+  lastOrderDate: string
 }

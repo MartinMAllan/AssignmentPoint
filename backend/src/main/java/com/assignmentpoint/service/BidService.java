@@ -7,10 +7,11 @@ import com.assignmentpoint.entity.OrderBid;
 import com.assignmentpoint.entity.Writer;
 import com.assignmentpoint.exception.BadRequestException;
 import com.assignmentpoint.exception.ResourceNotFoundException;
+import com.assignmentpoint.exception.UnauthorizedException;
 import com.assignmentpoint.repository.OrderBidRepository;
 import com.assignmentpoint.repository.OrderRepository;
 import com.assignmentpoint.repository.WriterRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,19 +21,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class BidService {
-    
-    @Autowired
-    private OrderBidRepository bidRepository;
-    
-    @Autowired
-    private OrderRepository orderRepository;
-    
-    @Autowired
-    private WriterRepository writerRepository;
+
+    private final OrderBidRepository bidRepository;
+
+    private final OrderRepository orderRepository;
+
+    private final WriterRepository writerRepository;
+
+    public Long getWriterIdByUserId(Long userId) {
+        return writerRepository.findByUserId(userId)
+                .map(Writer::getId)
+                .orElseThrow(() -> new UnauthorizedException(
+                        "Writer profile not found for user with ID: " + userId));
+    }
     
     @Transactional
-    public BidDTO submitBid(Long writerId, CreateBidRequest request) {
+    public BidDTO submitBid(CreateBidRequest request) {
+        Long writerId = getWriterIdByUserId(request.getWriterId());
         Writer writer = writerRepository.findById(writerId)
             .orElseThrow(() -> new ResourceNotFoundException("Writer not found"));
         
@@ -48,20 +55,27 @@ public class BidService {
         }
         
         BigDecimal bidAmount = order.getTotalAmount().multiply(BigDecimal.valueOf(0.75));
-        
-        OrderBid bid = OrderBid.builder()
-            .order(order)
-            .writer(writer)
-            .bidAmount(bidAmount)
-            .deliveryHours(order.getDeliveryTime() != null ? order.getDeliveryTime() : 72)
-            .coverLetter(request.getCoverLetter())
-            .status(OrderBid.BidStatus.PENDING)
-            .submittedAt(LocalDateTime.now())
-            .build();
-        
+
+        System.out.println("[BidService] Calculated bid amount: " + bidAmount);
+
+        OrderBid bid = new OrderBid();
+        bid.setOrder(order);
+        bid.setWriter(writer);
+        bid.setAmount(bidAmount);
+        bid.setDeliveryHours(order.getDeliveryTime() != null ? order.getDeliveryTime() : 72);
+        bid.setCoverLetter(request.getCoverLetter());
+        bid.setStatus(OrderBid.BidStatus.PENDING);
+        bid.setCreatedAt(LocalDateTime.now());
+
+        System.out.println("[BidService] Bid to be submitted: " + bid);
+        bidRepository.save(bid);
+
+
         bid = bidRepository.save(bid);
-        
-        order.setTotalBids(order.getTotalBids() + 1);
+
+        Integer currentBids = order.getTotalBids();
+        order.setTotalBids((currentBids == null ? 0 : currentBids) + 1);
+
         orderRepository.save(order);
         
         return convertToDTO(bid);
@@ -158,12 +172,12 @@ public class BidService {
             .writerName(bid.getWriter().getUser().getFirstName() + " " + bid.getWriter().getUser().getLastName())
             .writerRating(bid.getWriter().getRating())
             .writerCompletedOrders(bid.getWriter().getTotalOrdersCompleted())
-            .bidAmount(bid.getBidAmount())
-            .currency(bid.getCurrency())
+            .bidAmount(bid.getAmount())
+//            .currency(bid.getCurrency())
             .deliveryHours(bid.getDeliveryHours())
             .coverLetter(bid.getCoverLetter())
             .status(bid.getStatus().name())
-            .submittedAt(bid.getSubmittedAt())
+            .submittedAt(bid.getCreatedAt())
             .build();
     }
 }

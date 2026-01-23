@@ -3,6 +3,7 @@ import type { Bid } from "../types"
 import { mockBids, mockOrderBids, mockOrders } from "../mock-data"
 
 export interface CreateBidRequest {
+  writerId: number
   orderId: number
   coverLetter: string
 }

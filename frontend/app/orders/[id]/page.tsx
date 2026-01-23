@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Textarea } from "@/components/ui/textarea"
-import { format, isValid } from "date-fns"
+import { parseISO, isValid, format, } from "date-fns"
 import {
   Calendar,
   Clock,
@@ -88,8 +88,6 @@ export default function OrderDetailPage() {
     console.log("[v0] Submitting bid:", { bidAmount, bidDeliveryHours, bidCoverLetter })
     // TODO: Implement bid submission
   }
-
-
 
   if (loading) {
     return (

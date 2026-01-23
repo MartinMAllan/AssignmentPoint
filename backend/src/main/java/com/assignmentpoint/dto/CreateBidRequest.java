@@ -7,6 +7,7 @@ import lombok.Data;
 public class CreateBidRequest {
     @NotNull(message = "Order ID is required")
     private Long orderId;
+    private Long writerId;
     
     private String coverLetter;
 }

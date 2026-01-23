@@ -99,7 +99,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           : [
               { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
               ...(user.role === "writer"
-                ? [{ icon: Briefcase, label: "Available Orders", href: "/available-orders" }]
+                ? [
+                    { icon: Briefcase, label: "Available Orders", href: "/available-orders" },
+                    { icon: FileText, label: "My Bids", href: "/writer/bids" },
+                  ]
                 : []),
               { icon: FileText, label: "Orders", href: "/orders" },
               { icon: MessageSquare, label: "Messages", href: "/messages" },

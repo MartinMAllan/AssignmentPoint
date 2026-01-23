@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label"
 import { orderService } from "@/lib/api/order.service"
 import { bidService } from "@/lib/api/bid.service"
 import { useAuth } from "@/lib/auth-context"
-import { format, formatDistanceToNow } from "date-fns"
+import { parseISO, isValid, format, formatDistanceToNow } from "date-fns"
+
 import {
   Calendar,
   Clock,
@@ -76,7 +77,7 @@ export default function OrderBiddingPage() {
       </DashboardLayout>
     )
   }
-
+  
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -100,8 +101,17 @@ export default function OrderBiddingPage() {
 
   const writerShare = order.customerIsReturning ? order.totalAmount * 0.45 : order.totalAmount * 0.4
   const writerPercentage = order.customerIsReturning ? 45 : 40
-
-  const hoursUntilDeadline = Math.ceil((new Date(order.deadline).getTime() - Date.now()) / (1000 * 60 * 60))
+  
+  // Make sure deadlineDate is a Date or null
+  const deadlineDate = order.deadline
+  ? (order.deadline instanceof Date
+      ? order.deadline
+      : new Date(order.deadline))
+  : null
+  
+  const hoursUntilDeadline = deadlineDate
+  ? Math.ceil((deadlineDate.getTime() - Date.now()) / (1000 * 60 * 60))
+  : null
 
   const handleSubmitBid = async () => {
     if (!proposal.trim()) {
@@ -117,6 +127,7 @@ export default function OrderBiddingPage() {
 
     try {
       await bidService.submitBid({
+        writerId: Number(user.id),
         orderId: Number(params.id),
         coverLetter: proposal,
       })
@@ -198,7 +209,11 @@ export default function OrderBiddingPage() {
                     <Calendar className="h-4 w-4 text-slate-400" />
                     <div>
                       <p className="text-xs text-slate-400">Deadline</p>
-                      <p className="text-sm font-medium text-slate-200">{format(new Date(order.deadline), "MMM dd")}</p>
+                      <p className="font-medium">
+                        {deadlineDate && isValid(deadlineDate)
+                        ? format(deadlineDate, "MMM dd, yyyy HH:mm a")
+                        : "Not specified"}
+                        </p>
                     </div>
                   </div>
                 </div>
@@ -226,10 +241,15 @@ export default function OrderBiddingPage() {
                       <Clock className="h-4 w-4 text-blue-500" />
                       <p className="text-xs text-slate-400">Time to Deadline</p>
                     </div>
-                    <p className="text-2xl font-bold text-slate-100">{hoursUntilDeadline}h</p>
-                    <p className="text-sm text-slate-400 mt-1">
-                      {formatDistanceToNow(new Date(order.deadline), { addSuffix: true })}
-                    </p>
+                    <p className="text-2xl font-bold text-slate-100">
+                      {hoursUntilDeadline !== null ? `${hoursUntilDeadline}h` : "--"}
+                      </p>
+                      <p className="text-sm text-slate-400 mt-1">
+                        {deadlineDate && isValid(deadlineDate)
+                        ? formatDistanceToNow(deadlineDate, { addSuffix: true })
+                        : "No deadline set"}
+                        </p>
+
                   </div>
                 </div>
               </CardContent>

@@ -10,10 +10,12 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { orderService } from "@/lib/api/order.service"
+import { getDisplayStatus } from "@/lib/utils"
 import type { Order } from "@/lib/types"
+import { format, isValid } from "date-fns"
 
 const ORDER_STATUSES = [
-  { value: "available", label: "AVAILABLE" },
+  { value: "available", label: "BIDDING" },
   { value: "pending", label: "PENDING" },
   { value: "in_progress", label: "IN PROGRESS" },
   { value: "in_review", label: "IN REVIEW" },
@@ -22,6 +24,18 @@ const ORDER_STATUSES = [
   { value: "canceled", label: "CANCELED" },
   { value: "disputed", label: "DISPUTED" },
 ]
+
+const STATUS_MAP: Record<string, string> = {
+  AVAILABLE: "available",
+  PENDING: "pending",
+  IN_PROGRESS: "in_progress",
+  IN_REVIEW: "in_review",
+  REVISION: "revision",
+  COMPLETED: "completed",
+  CANCELED: "canceled",
+  CANCELLED: "canceled",
+  DISPUTED: "disputed",
+}
 
 export default function CustomerOrdersPage() {
   const { user } = useAuth()
@@ -57,10 +71,6 @@ export default function CustomerOrdersPage() {
     fetchOrders()
   }, [user?.id])
 
-  const getStatusDisplay = (status: string): string => {
-    return status.replace(/_/g, " ").toUpperCase()
-  }
-
   const getStatusColor = (status: string) => {
     const statusLower = status.toLowerCase()
     switch (statusLower) {
@@ -86,8 +96,8 @@ export default function CustomerOrdersPage() {
   }
 
   const filteredOrders = orders.filter((order) => {
-    const orderStatus = order.status?.toLowerCase().replace(/ /g, "_")
-    return orderStatus === selectedTab
+    const normalized = STATUS_MAP[order.status as keyof typeof STATUS_MAP]
+    return normalized === selectedTab
   })
 
   if (loading) {
@@ -157,7 +167,7 @@ export default function CustomerOrdersPage() {
                             <p className="text-sm text-slate-400">Order #{order.orderNumber}</p>
                           </div>
                           <Badge variant="outline" className={getStatusColor(order.status)}>
-                            {getStatusDisplay(order.status)}
+                            {getDisplayStatus(order.status as any, user?.role)}
                           </Badge>
                         </div>
                       </CardHeader>
@@ -170,9 +180,18 @@ export default function CustomerOrdersPage() {
                           <div className="flex items-center gap-2 text-sm">
                             <Clock className="h-4 w-4 text-slate-400" />
                             <span className="text-slate-300">
-                              {order.deadline instanceof Date
-                                ? order.deadline.toLocaleDateString()
-                                : new Date(order.deadline).toLocaleDateString()}
+                               {(() => {
+                                    if (!order.deadline) return "Not specified"
+        
+                                    const date =
+                                      order.deadline instanceof Date
+                                        ? order.deadline
+                                        : new Date(order.deadline)
+        
+                                    return isValid(date)
+                                      ? format(date, "MMM dd, yyyy HH:mm a")
+                                      : "Not specified"
+                                  })()}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
